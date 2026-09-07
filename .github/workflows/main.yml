@@ -1,0 +1,42 @@
+name: Compilar SabrinaCamera IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  compilar:
+    runs-on: macos-latest
+
+    steps:
+      - name: Baixar projeto do GitHub
+        uses: actions/checkout@v4
+
+      - name: Descompactar arquivo do projeto
+        run: |
+          if [ -f "SabrinaCamera-iPhone.zip" ]; then
+            unzip -o SabrinaCamera-iPhone.zip
+          fi
+
+      - name: Compilar Projeto iOS
+        run: |
+          PROJ_PATH=$(find . -name "SabrinaCamera.xcodeproj" | head -n 1)
+          xcodebuild archive \
+            -project "$PROJ_PATH" \
+            -scheme SabrinaCamera \
+            -sdk iphoneos \
+            -archivePath build/App.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+      - name: Gerar Pacote IPA
+        run: |
+          mkdir -p build/Payload
+          cp -r build/App.xcarchive/Products/Applications/*.app build/Payload/
+          cd build && zip -r SabrinaCamera.ipa Payload
+
+      - name: Enviar IPA para Download
+        uses: actions/upload-artifact@v4
+        with:
+          name: SabrinaCamera-IPA
+          path: build/SabrinaCamera.ipa
